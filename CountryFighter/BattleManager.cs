@@ -2,8 +2,7 @@
 
 public static class BattleManager
 {
-    public static bool ShowBorringStaticstics = true;
-    public static void Attack(Country attacker, Country defender)
+    public static void Attack(Country attacker, Country defender, IBattleLogger logger)
     {
         if (attacker == defender) return;
 
@@ -11,10 +10,10 @@ public static class BattleManager
         ArmyInfo defenderArmyInfo = new ArmyInfo(defender);
         while (defender.MainArmy.CanFight && attacker.MainArmy.CanFight)
         {
-            for(int i = 0; i < 10; i++)
+            for (int i = 0; i < 10; i++)
             {
-                attacker.MainArmy.AttackCountry(defender, defender);
-                defender.MainArmy.AttackCountry(attacker, defender);
+                attacker.MainArmy.AttackCountry(defender, defender, logger);
+                defender.MainArmy.AttackCountry(attacker, defender, logger);
                 Thread.Sleep(100);
             }
             attackerArmyInfo.DisplayCombinedLosses();

@@ -79,7 +79,7 @@ public class Army : IMyObserver<UnitType, int>
 
     }
 
-    public void AttackCountry(Country target, Country place)
+    public void AttackCountry(Country target, Country place, IBattleLogger logger)
     {
         ArmyUnit unit = ArmyUnits.PickRandom();
         var posibleTargets = target.MainArmy.ArmyUnits.Intersect(unit.GetPosibleTargets(target.MainArmy.ArmyUnits)).ToList();
@@ -88,7 +88,7 @@ public class Army : IMyObserver<UnitType, int>
         {
             targetUnit = unit.FindPreferableTarget(posibleTargets);
         }
-        unit.TryAttack(targetUnit, place);
+        unit.TryAttack(targetUnit, place, logger);
     }
 
     public void Display()

@@ -7,6 +7,11 @@ public enum UnitType
 
 public abstract class ArmyUnit : IDamagable
 {
+    private const double HOME_TERRITORY_BONUS = 2.0;
+    private const double ENEMY_TERRITORY_PENALTY = 0.8;
+    private const double NEUTRAL_TERRITORY_FACTOR = 1.0;
+    private const double QUANTITY_BALANCE_FACTOR = 0.5;
+
     private double _quality;
     public double Quality { get => _quality; protected set { if (value >= 0 && value <= 10) _quality = value; } }
     private int _count;
@@ -49,80 +54,101 @@ public abstract class ArmyUnit : IDamagable
         return t;
     }
 
-    public int GetAttackDamage(ArmyUnit defender, Country battlePoint, out int troopsDamage)
+    public int GetAttackDamage(ArmyUnit defender, Country battlePoint, out int troopsDamage, IBattleLogger logger)
     {
+        //TODO:
         //add scouting factor and squad forming;
         //add suply(logistics) factor
         //add strategic strikes
-        int attackerQuantity = Count;
-        int defenderQuantity = defender.Count;
 
-        if (attackerQuantity == 0 || defenderQuantity == 0) 
+        if (Count == 0 || defender.Count == 0)
         {
             Console.WriteLine("Can't deal damage");
             Console.WriteLine("There is no such unit in army!");
             troopsDamage = 0;
-            return 0; 
+            return 0;
         }
 
-        double locationFactor;
-        if (battlePoint == ArmyOrigin.CountryOrigin) locationFactor = 2;
-        else if (battlePoint == defender.ArmyOrigin.CountryOrigin) locationFactor = 0.8;
-        else locationFactor = 1;
+        double locationFactor = CalculateLocationFactor(defender, battlePoint);
+        double qualityComparison = CalculateQualityFactor(defender);
+        double scoutingComparison = CalculateScoutingFactor(defender);
+        double quantityComparison = CalculateQuantityComparison(defender);
 
+        int pureDamage = (int)Math.Ceiling(GetPureDamage(defender));
+
+        var report = GenerateBattleReport(defender,
+            out troopsDamage,
+            locationFactor,
+            qualityComparison,
+            scoutingComparison,
+            quantityComparison,
+            pureDamage);
+
+        logger.LogDamage(report);
+
+        return report.EntitiesDestroyed;
+    }
+
+    private BattleReport GenerateBattleReport(ArmyUnit defender, out int troopsDamage, double locationFactor, double qualityComparison, double scoutingComparison, double quantityComparison, int pureDamage)
+    {
+        int entitiesDestroyed = 0;
+        troopsDamage = (int)(pureDamage * locationFactor * qualityComparison * quantityComparison * scoutingComparison);
+        if (defender.TypeOfUnit != UnitType.Soldier)
+        {
+            entitiesDestroyed = troopsDamage;
+            troopsDamage = Extensions.random.Next(entitiesDestroyed * defender.OperatorCount);
+        }
+
+        return new BattleReport(this, defender,
+            pureDamage,
+            locationFactor,
+            qualityComparison,
+            quantityComparison,
+            scoutingComparison,
+            entitiesDestroyed,
+            troopsDamage);
+    }
+
+    private double CalculateQuantityComparison(ArmyUnit defender)
+    {
+        double quantityComparison = 1;
+
+        if (TypeOfUnit == defender.TypeOfUnit)
+        {
+            double attackerFactor = Count;
+            double defenderFactor = defender.Count;
+            if (Count > defender.Count) attackerFactor *= QUANTITY_BALANCE_FACTOR;
+            else defenderFactor *= QUANTITY_BALANCE_FACTOR;
+
+            quantityComparison = (double)attackerFactor / (double)defenderFactor;
+        }
+
+        return quantityComparison;
+    }
+
+    private double CalculateScoutingFactor(ArmyUnit defender)
+    {
+        return Extensions.DividingTheBigger(ArmyOrigin.Scouting, defender.ArmyOrigin.Scouting, 0.5);
+    }
+
+    private double CalculateQualityFactor(ArmyUnit defender)
+    {
         double attackerQuality = Quality + ArmyOrigin.AverageQuality + ArmyOrigin.BattleSpirit;
         double defenderQuality = defender.ArmyOrigin.AverageQuality + defender.ArmyOrigin.BattleSpirit + defender.Quality;
         double qualityComparison = Extensions.DividingTheBigger(attackerQuality, defenderQuality, 0.5);
-
-        double scoutingComparison = Extensions.DividingTheBigger(ArmyOrigin.Scouting, defender.ArmyOrigin.Scouting, 0.5);
-
-        double quantityComparison = 1;
-
-        if(TypeOfUnit == defender.TypeOfUnit)
-        {
-            double attackerFactor = attackerQuantity;
-            double defenderFactor = defenderQuantity;
-            if (attackerQuantity > defenderQuantity) attackerFactor = attackerFactor * 0.5;
-            else defenderFactor = defenderFactor * 0.5;
-
-            quantityComparison = ((double)attackerFactor / (double)defenderFactor);
-        }
-
-        int damage = 0;
-
-        int pureDamage = (int)Math.Ceiling(GetPureDamage(defender));
-        troopsDamage = (int)(pureDamage * locationFactor * qualityComparison * quantityComparison * scoutingComparison);
-        Console.WriteLine(pureDamage * locationFactor * qualityComparison * quantityComparison * scoutingComparison);
-        if (defender.TypeOfUnit != UnitType.Soldier)
-        {
-            damage = troopsDamage;
-            troopsDamage = Extensions.random.Next(damage * defender.OperatorCount);
-        }
-        Console.WriteLine("]:::=====-------------------------");
-        Console.WriteLine("The " + TypeOfUnit.ToString() + " of " + ArmyOrigin.CountryOrigin.Name + 
-            " has attacked " + defender.TypeOfUnit.ToString() + " of " + defender.ArmyOrigin.CountryOrigin.Name);
-            
-        Console.WriteLine("]:=:=:=-");
-        if(BattleManager.ShowBorringStaticstics)
-        {
-            Console.WriteLine("> damageFactor: " + pureDamage);
-            Thread.Sleep(50);
-            Console.WriteLine("> qualityComparison: " + qualityComparison);
-            Thread.Sleep(50);
-            Console.WriteLine("> scoutingComparison: " + scoutingComparison);
-            Thread.Sleep(50);
-            Console.WriteLine("> quantityComparison: " + quantityComparison + "(" + attackerQuantity + ", " + defenderQuantity + "), total army: (" + ArmyOrigin.ArmyCount + ", " + defender.ArmyOrigin.ArmyCount + ")");
-            Thread.Sleep(50);
-            Console.WriteLine("> locationFactor: " + locationFactor);
-            Thread.Sleep(50);
-            Console.WriteLine("]:=:=:=-");
-        }
-        Console.WriteLine("damage done to enemy weaponry: " + damage + ", troops killed: " + troopsDamage);
-        Console.WriteLine("]::===-----------");
-        return damage;
+        return qualityComparison;
     }
 
-    public void TryAttack(ArmyUnit defender, Country battlePoint)
+    private double CalculateLocationFactor(ArmyUnit defender, Country battlePoint)
+    {
+        double locationFactor;
+        if (battlePoint == ArmyOrigin.CountryOrigin) locationFactor = HOME_TERRITORY_BONUS;
+        else if (battlePoint == defender.ArmyOrigin.CountryOrigin) locationFactor = ENEMY_TERRITORY_PENALTY;
+        else locationFactor = NEUTRAL_TERRITORY_FACTOR;
+        return locationFactor;
+    }
+
+    public void TryAttack(ArmyUnit defender, Country battlePoint, IBattleLogger logger)
     {
         if (GetPureDamage(defender) <= 0)
         {
@@ -130,7 +156,7 @@ public abstract class ArmyUnit : IDamagable
             return;
         }
 
-        defender.ArmyOrigin.TakeDamage(defender, GetAttackDamage(defender, battlePoint, out int troopsDamage), troopsDamage);
+        defender.ArmyOrigin.TakeDamage(defender, GetAttackDamage(defender, battlePoint, out int troopsDamage, logger), troopsDamage);
     }
 
     public void UpgradeUnits(float month)
@@ -171,6 +197,7 @@ public abstract class ArmyUnit : IDamagable
     }
 }
 
+#region CONCRETE_TROOPS
 public class Soldier : ArmyUnit
 {
     public Soldier(double quality, int count, Army army) : base(quality, count, UnitType.Soldier, army, 1)
@@ -254,3 +281,4 @@ public class Helicopter : ArmyUnit
         _damageTable.Add(UnitType.MissileLauncherSystem, 2);
     }
 }
+#endregion
