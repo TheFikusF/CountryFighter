@@ -54,7 +54,7 @@ public abstract class ArmyUnit : IDamagable
         //add suply(logistics) factor
         //add strategic strikes
 
-        if (Count == 0 || defender.Count == 0)
+        if (IsValid() == false || defender.IsValid() == false)
         {
             Console.WriteLine("Can't deal damage");
             Console.WriteLine("There is no such unit in army!");
@@ -80,6 +80,11 @@ public abstract class ArmyUnit : IDamagable
         logger.LogDamage(report);
 
         return report.EntitiesDestroyed;
+    }
+
+    private bool IsValid()
+    {
+        return Count > 0;
     }
 
     private BattleReport GenerateBattleReport(ArmyUnit defender, out int troopsDamage, double locationFactor, double qualityComparison, double scoutingComparison, double quantityComparison, int pureDamage)
