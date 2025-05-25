@@ -39,7 +39,7 @@ public class Army
 
     public Army(Country country, double scouting, double quality, double battleSpirit, int armySize)
     {
-        ArmyUnits.Add(new Soldier(quality, armySize, this));
+        AddUnits(new Soldier(quality, armySize));
         CountryOrigin = country;
         BattleSpirit = battleSpirit;
         Scouting = scouting;
@@ -75,7 +75,9 @@ public class Army
 
     public void AddUnits(ArmyUnit unit)
     {
-        if(ArmyUnits.FindByType(unit.GetType()) != null)
+        unit.ArmyOrigin = this;
+
+        if (ArmyUnits.FindByType(unit.GetType()) != null)
         {
             ArmyUnits.FindByType(unit.GetType()).AddUnits(unit);
             return;
@@ -98,20 +100,5 @@ public class Army
             : posibleTargets.PickRandom();
 
         unit.TryAttack(targetUnit, place, logger);
-    }
-
-    public void Display()
-    {
-        Console.WriteLine("]:=:[]:=:[||||||||]:=:[]:=:[");
-        Console.WriteLine("The army of " + CountryOrigin.Name);
-        Console.WriteLine("]:::::===---------");
-        Console.WriteLine(ArmyUnits.FindByType<Soldier>().ToString());
-        Console.WriteLine("Army battle spirit: " + BattleSpirit);
-        Console.WriteLine("]:::::===---------");
-        foreach(var unit in ArmyUnits.Where(n => n is not Soldier))
-        {
-            Console.WriteLine(unit.ToString());
-        }
-        Console.WriteLine("]:======:-:======:-:======:[");
     }
 }

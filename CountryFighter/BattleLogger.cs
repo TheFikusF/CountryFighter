@@ -14,6 +14,7 @@ public record BattleReport(
 public interface IBattleLogger
 {
     void LogDamage(BattleReport report);
+    void Display(Army army);
 }
 
 public class ConsoleBattleLogger : IBattleLogger
@@ -42,5 +43,20 @@ public class ConsoleBattleLogger : IBattleLogger
         }
         Console.WriteLine($"damage done to enemy weaponry: {report.EntitiesDestroyed}, troops killed: {report.TroopsKilled}");
         Console.WriteLine("]::===-----------");
+    }
+
+    public void Display(Army army)
+    {
+        Console.WriteLine("]:=:[]:=:[||||||||]:=:[]:=:[");
+        Console.WriteLine("The army of " + army.CountryOrigin.Name);
+        Console.WriteLine("]:::::===---------");
+        Console.WriteLine(army.ArmyUnits.FindByType<Soldier>().ToString());
+        Console.WriteLine("Army battle spirit: " + army.BattleSpirit);
+        Console.WriteLine("]:::::===---------");
+        foreach(var unit in army.ArmyUnits.Where(n => n is not Soldier))
+        {
+            Console.WriteLine(unit.ToString());
+        }
+        Console.WriteLine("]:======:-:======:-:======:[");
     }
 }

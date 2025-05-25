@@ -31,13 +31,12 @@ public abstract class ArmyUnit : IDamagable
     }
 
     public int OperatorCount { get; private set; }
-    public Army ArmyOrigin { get; private set; }
+    public Army ArmyOrigin { get; set; }
 
-    public ArmyUnit(double quality, int count, Army origin, int operators)
+    public ArmyUnit(double quality, int count, int operators)
     {
         Count = count;
         Quality = quality;
-        ArmyOrigin = origin;
         OperatorCount = operators;
     }
 
@@ -192,7 +191,7 @@ public abstract class ArmyUnit : IDamagable
 }
 
 #region CONCRETE_TROOPS
-public class Soldier(double quality, int count, Army army) : ArmyUnit(quality, count, army, 1)
+public class Soldier(double quality, int count) : ArmyUnit(quality, count, 1)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
@@ -206,7 +205,7 @@ public class Soldier(double quality, int count, Army army) : ArmyUnit(quality, c
     };
 }
 
-public class Tank(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
+public class Tank(double quality, int count) : ArmyUnit(quality, count, 3)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
@@ -219,7 +218,7 @@ public class Tank(double quality, int count, Army army) : ArmyUnit(quality, coun
     };
 }
 
-public class FighterPlane(double quality, int count, Army army) : ArmyUnit(quality, count, army, 1)
+public class FighterPlane(double quality, int count) : ArmyUnit(quality, count, 1)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
@@ -233,7 +232,7 @@ public class FighterPlane(double quality, int count, Army army) : ArmyUnit(quali
     };
 }
 
-public class Artillery(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
+public class Artillery(double quality, int count) : ArmyUnit(quality, count, 3)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
@@ -245,7 +244,7 @@ public class Artillery(double quality, int count, Army army) : ArmyUnit(quality,
     };
 }
 
-public class AntiAircraftSystem(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
+public class AntiAircraftSystem(double quality, int count) : ArmyUnit(quality, count, 3)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
@@ -255,7 +254,7 @@ public class AntiAircraftSystem(double quality, int count, Army army) : ArmyUnit
     };
 }
 
-public class MissileLauncherSystem(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
+public class MissileLauncherSystem(double quality, int count) : ArmyUnit(quality, count, 3)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
@@ -267,7 +266,7 @@ public class MissileLauncherSystem(double quality, int count, Army army) : ArmyU
     };
 }
 
-public class Helicopter(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
+public class Helicopter(double quality, int count) : ArmyUnit(quality, count, 3)
 {
     public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
