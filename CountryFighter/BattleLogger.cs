@@ -23,7 +23,7 @@ public class ConsoleBattleLogger : IBattleLogger
     public void LogDamage(BattleReport report)
     {
         Console.WriteLine("]:::=====-------------------------");
-        Console.WriteLine($"The {report.Attacker.TypeOfUnit} of {report.Attacker.ArmyOrigin.CountryOrigin.Name} has attacked {report.Defender.TypeOfUnit} of {report.Defender.ArmyOrigin.CountryOrigin.Name}");
+        Console.WriteLine($"The {report.Attacker.Name} of {report.Attacker.ArmyOrigin.CountryOrigin.Name} has attacked {report.Defender.Name} of {report.Defender.ArmyOrigin.CountryOrigin.Name}");
 
         Console.WriteLine("]:=:=:=-");
         if (ShowBoringStats)

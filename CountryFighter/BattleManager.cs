@@ -4,10 +4,13 @@ public static class BattleManager
 {
     public static void Attack(Country attacker, Country defender, IBattleLogger logger)
     {
-        if (attacker == defender) return;
+        if (attacker == defender)
+        {
+            return;
+        }
 
-        ArmyInfo attackerArmyInfo = new ArmyInfo(attacker);
-        ArmyInfo defenderArmyInfo = new ArmyInfo(defender);
+        using var attackerArmyInfo = new ArmyInfo(attacker);
+        using var defenderArmyInfo = new ArmyInfo(defender);
         while (defender.MainArmy.CanFight && attacker.MainArmy.CanFight)
         {
             for (int i = 0; i < 10; i++)

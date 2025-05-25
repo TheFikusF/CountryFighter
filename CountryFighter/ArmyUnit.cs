@@ -1,10 +1,5 @@
 ﻿namespace CountryFighter;
 
-public enum UnitType
-{
-    Soldier, Tank, FighterPlane, Artillery, AntiAircraftSystem, MissileLauncherSystem, Helicopter
-}
-
 public abstract class ArmyUnit : IDamagable
 {
     private const double HOME_TERRITORY_BONUS = 2.0;
@@ -12,46 +7,45 @@ public abstract class ArmyUnit : IDamagable
     private const double NEUTRAL_TERRITORY_FACTOR = 1.0;
     private const double QUANTITY_BALANCE_FACTOR = 0.5;
 
-    private double _quality;
-    public double Quality { get => _quality; protected set { if (value >= 0 && value <= 10) _quality = value; } }
-    private int _count;
-    public int Count 
-    { 
-        get => _count; 
-        set 
-        {   
-            if(value < 1)
-            {
-                Console.WriteLine("The " + TypeOfUnit.ToString() + " of " + ArmyOrigin.CountryOrigin.Name + " has been destroyed!");
-            }
-            _count = value; 
-        } 
-    }
-    public int OperatorCount { get; private set; }
-    public UnitType TypeOfUnit { get; private set; }
-    public Army ArmyOrigin { get; private set; }
-    protected Dictionary<UnitType, double> _damageTable = new Dictionary<UnitType, double>();
+    public virtual string Name => GetType().Name;
 
-    public ArmyUnit(double quality, int count, UnitType type, Army origin, int operators)
+    private double _quality;
+    public double Quality
+    {
+        get => _quality;
+        protected set => _quality = Math.Clamp(value, 0, 10);
+    }
+
+    private int _count;
+    public int Count
+    {
+        get => _count;
+        set
+        {
+            if (value < 1)
+            {
+                Console.WriteLine("The " + Name + " of " + ArmyOrigin.CountryOrigin.Name + " has been destroyed!");
+            }
+            _count = value;
+        }
+    }
+
+    public int OperatorCount { get; private set; }
+    public Army ArmyOrigin { get; private set; }
+
+    public ArmyUnit(double quality, int count, Army origin, int operators)
     {
         Count = count;
         Quality = quality;
-        TypeOfUnit = type;
-        _damageTable.Add(TypeOfUnit, 1);
         ArmyOrigin = origin;
         OperatorCount = operators;
     }
 
-    public double GetPureDamage(ArmyUnit unit) => _damageTable.ContainsKey(unit.TypeOfUnit) ? _damageTable[unit.TypeOfUnit] : 0;
+    public virtual double GetPureDamage(ArmyUnit unit) => 0;
 
     public List<ArmyUnit> GetPosibleTargets(List<ArmyUnit> targets)
     {
-        List<ArmyUnit> t = new List<ArmyUnit>();
-        foreach (ArmyUnit target in targets)
-        {
-            if (GetPureDamage(target) > 0) t.Add(target);
-        }
-        return t;
+        return targets.Where(x => GetPureDamage(x) > 0).ToList();
     }
 
     public int GetAttackDamage(ArmyUnit defender, Country battlePoint, out int troopsDamage, IBattleLogger logger)
@@ -93,7 +87,7 @@ public abstract class ArmyUnit : IDamagable
     {
         int entitiesDestroyed = 0;
         troopsDamage = (int)(pureDamage * locationFactor * qualityComparison * quantityComparison * scoutingComparison);
-        if (defender.TypeOfUnit != UnitType.Soldier)
+        if (GetType() != typeof(Soldier))
         {
             entitiesDestroyed = troopsDamage;
             troopsDamage = Extensions.random.Next(entitiesDestroyed * defender.OperatorCount);
@@ -113,7 +107,7 @@ public abstract class ArmyUnit : IDamagable
     {
         double quantityComparison = 1;
 
-        if (TypeOfUnit == defender.TypeOfUnit)
+        if (GetType() == defender.GetType())
         {
             double attackerFactor = Count;
             double defenderFactor = defender.Count;
@@ -174,16 +168,16 @@ public abstract class ArmyUnit : IDamagable
     public ArmyUnit FindPreferableTarget(List<ArmyUnit> list)
     {
         ArmyUnit bestTarget = list.FirstOrDefault();
-        foreach(ArmyUnit unit in list)
+        foreach (ArmyUnit unit in list)
         {
-            if(GetPureDamage(unit) > GetPureDamage(bestTarget)) bestTarget = unit;
+            if (GetPureDamage(unit) > GetPureDamage(bestTarget)) bestTarget = unit;
         }
         return bestTarget;
     }
 
     public override string ToString()
     {
-        return TypeOfUnit.ToString() + " |=| Count: " + Count + ", Quality: " + Quality;
+        return $"{Name} |=| Count: {Count}, Quality: {Quality}";
     }
 
     public void TakeDamage(int damage, out bool destroyed)
@@ -198,87 +192,91 @@ public abstract class ArmyUnit : IDamagable
 }
 
 #region CONCRETE_TROOPS
-public class Soldier : ArmyUnit
+public class Soldier(double quality, int count, Army army) : ArmyUnit(quality, count, army, 1)
 {
-    public Soldier(double quality, int count, Army army) : base(quality, count, UnitType.Soldier, army, 1)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.Tank, 0.8);
-        _damageTable.Add(UnitType.FighterPlane, 0.6);
-        _damageTable.Add(UnitType.Artillery, 0.3);
-        _damageTable.Add(UnitType.AntiAircraftSystem, 2.5);
-        _damageTable.Add(UnitType.MissileLauncherSystem, 1);
-        _damageTable.Add(UnitType.Helicopter, 0.7);
-    }
+        Tank => 0.8,
+        FighterPlane => 0.6,
+        Artillery => 0.3,
+        AntiAircraftSystem => 2.5,
+        MissileLauncherSystem => 1,
+        Helicopter => 0.7,
+        _ => base.GetPureDamage(unit),
+    };
 }
 
-public class Tank : ArmyUnit
+public class Tank(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
 {
-    public Tank(double quality, int count, Army army) : base(quality, count, UnitType.Tank, army, 3)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.Soldier, 3);
-        _damageTable.Add(UnitType.Artillery, 2);
-        _damageTable.Add(UnitType.AntiAircraftSystem, 2.5);
-        _damageTable.Add(UnitType.MissileLauncherSystem, 2);
-        _damageTable.Add(UnitType.Helicopter, 0.6);
-    }
+        Soldier => 3,
+        Artillery => 2,
+        AntiAircraftSystem => 2.5,
+        MissileLauncherSystem => 2,
+        Helicopter => 0.6,
+        _ => base.GetPureDamage(unit),
+    };
 }
 
-public class FighterPlane : ArmyUnit
+public class FighterPlane(double quality, int count, Army army) : ArmyUnit(quality, count, army, 1)
 {
-    public FighterPlane(double quality, int count, Army army) : base(quality, count, UnitType.FighterPlane, army, 1)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.Soldier, 3);
-        _damageTable.Add(UnitType.Tank, 2);
-        _damageTable.Add(UnitType.Artillery, 2.5);
-        _damageTable.Add(UnitType.AntiAircraftSystem, 2);
-        _damageTable.Add(UnitType.MissileLauncherSystem, 2.5);
-        _damageTable.Add(UnitType.Helicopter, 2.3);
-    }
+        Soldier => 3,
+        Tank => 2,
+        Artillery => 2.5,
+        AntiAircraftSystem => 2,
+        MissileLauncherSystem => 2.5,
+        Helicopter => 2.3,
+        _ => base.GetPureDamage(unit),
+    };
 }
 
-public class Artillery : ArmyUnit
+public class Artillery(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
 {
-    public Artillery(double quality, int count, Army army) : base(quality, count, UnitType.Artillery, army, 3)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.Soldier, 3);
-        _damageTable.Add(UnitType.Tank, 2);
-        _damageTable.Add(UnitType.AntiAircraftSystem, 2);
-        _damageTable.Add(UnitType.MissileLauncherSystem, 2);
-    }
+        Soldier => 3,
+        Tank => 2,
+        AntiAircraftSystem => 2,
+        MissileLauncherSystem => 2,
+        _ => base.GetPureDamage(unit),
+    };
 }
 
-public class AntiAircraftSystem : ArmyUnit
+public class AntiAircraftSystem(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
 {
-    public AntiAircraftSystem(double quality, int count, Army army) : base(quality, count, UnitType.AntiAircraftSystem, army, 3)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.FighterPlane, 3);
-        _damageTable.Add(UnitType.Helicopter, 3);
-    }
+        FighterPlane => 3,
+        Helicopter => 3,
+        _ => base.GetPureDamage(unit),
+    };
 }
 
-public class MissileLauncherSystem : ArmyUnit
+public class MissileLauncherSystem(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
 {
-    public MissileLauncherSystem(double quality, int count, Army army) : base(quality, count, UnitType.MissileLauncherSystem, army, 3)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.Soldier, 4);
-        _damageTable.Add(UnitType.Tank, 4);
-        _damageTable.Add(UnitType.FighterPlane, 2);
-        _damageTable.Add(UnitType.Artillery, 4);
-        _damageTable.Add(UnitType.AntiAircraftSystem, 4);
-        _damageTable.Add(UnitType.Helicopter, 2);
-    }
+        Soldier => 4,
+        Tank => 4,
+        Artillery => 4,
+        AntiAircraftSystem => 4,
+        _ => base.GetPureDamage(unit),
+    };
 }
 
-public class Helicopter : ArmyUnit
+public class Helicopter(double quality, int count, Army army) : ArmyUnit(quality, count, army, 3)
 {
-    public Helicopter(double quality, int count, Army army) : base(quality, count, UnitType.Helicopter, army, 3)
+    public override double GetPureDamage(ArmyUnit unit) => unit switch
     {
-        _damageTable.Add(UnitType.Soldier, 1.5);
-        _damageTable.Add(UnitType.Tank, 1.5);
-        _damageTable.Add(UnitType.FighterPlane, 1.5);
-        _damageTable.Add(UnitType.Artillery, 2);
-        _damageTable.Add(UnitType.AntiAircraftSystem, 2);
-        _damageTable.Add(UnitType.MissileLauncherSystem, 2);
-    }
+        Soldier => 3,
+        Tank => 3,
+        Artillery => 2,
+        AntiAircraftSystem => 2,
+        MissileLauncherSystem => 2,
+        _ => base.GetPureDamage(unit),
+    };
 }
 #endregion

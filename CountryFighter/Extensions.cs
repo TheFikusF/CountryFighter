@@ -4,22 +4,31 @@ public static class Extensions
 {
     public static Random random = new Random();
 
-    public static ArmyUnit FindByType(this List<ArmyUnit> units, UnitType type)
+    public static ArmyUnit FindByType(this List<ArmyUnit> units, Type type)
     {
-        return units.FirstOrDefault(n => n.TypeOfUnit == type);
+        return units.FirstOrDefault(n => n.GetType() == type);
+    }
+
+    public static ArmyUnit FindByType<T>(this List<ArmyUnit> units) where T : ArmyUnit
+    {
+        return units.FirstOrDefault(n => n is T);
     }
 
     public static T PickRandom<T>(this List<T> list) => list[random.Next(list.Count)];
 
-    public static void AddToValue(this Dictionary<UnitType, int> dict, UnitType type, int value)
+    public static void AddToValue<T>(this Dictionary<T, int> dict, T type, int value)
     {
-        if (value < 1) return;
+        if (value < 1)
+        {
+            return;
+        }
 
-        if(dict.ContainsKey(type))
+        if (dict.ContainsKey(type))
         {
             dict[type] += value;
             return;
         }
+
         dict.Add(type, value);
     }
 
