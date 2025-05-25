@@ -82,6 +82,54 @@ public abstract class ArmyUnit : IDamagable
         return report.EntitiesDestroyed;
     }
 
+    public void TryAttack(ArmyUnit defender, Country battlePoint, IBattleLogger logger)
+    {
+        if (GetPureDamage(defender) <= 0)
+        {
+            Console.WriteLine("There is no such unit in army!");
+            return;
+        }
+
+        defender.ArmyOrigin.TakeDamage(defender, GetAttackDamage(defender, battlePoint, out int troopsDamage, logger), troopsDamage);
+    }
+
+    public void UpgradeUnits(float month)
+    {
+
+    }
+
+    public void AddUnits(ArmyUnit unit)
+    {
+        double multiplier = (double)Count / (double)unit.Count;
+        Count += unit.Count;
+        Quality = (multiplier * Quality + unit.Quality) / 1 + multiplier;
+    }
+
+    public ArmyUnit FindPreferableTarget(List<ArmyUnit> list)
+    {
+        ArmyUnit bestTarget = list.FirstOrDefault();
+        foreach (ArmyUnit unit in list)
+        {
+            if (GetPureDamage(unit) > GetPureDamage(bestTarget)) bestTarget = unit;
+        }
+        return bestTarget;
+    }
+
+    public override string ToString()
+    {
+        return $"{Name} |=| Count: {Count}, Quality: {Quality}";
+    }
+
+    public void TakeDamage(int damage, out bool destroyed)
+    {
+        destroyed = false;
+        Count -= damage;
+        if (Count <= 0)
+        {
+            destroyed = true;
+        }
+    }
+
     private bool IsValid()
     {
         return Count > 0;
@@ -144,54 +192,6 @@ public abstract class ArmyUnit : IDamagable
         else if (battlePoint == defender.ArmyOrigin.CountryOrigin) locationFactor = ENEMY_TERRITORY_PENALTY;
         else locationFactor = NEUTRAL_TERRITORY_FACTOR;
         return locationFactor;
-    }
-
-    public void TryAttack(ArmyUnit defender, Country battlePoint, IBattleLogger logger)
-    {
-        if (GetPureDamage(defender) <= 0)
-        {
-            Console.WriteLine("There is no such unit in army!");
-            return;
-        }
-
-        defender.ArmyOrigin.TakeDamage(defender, GetAttackDamage(defender, battlePoint, out int troopsDamage, logger), troopsDamage);
-    }
-
-    public void UpgradeUnits(float month)
-    {
-
-    }
-
-    public void AddUnits(ArmyUnit unit)
-    {
-        double multiplier = (double)Count / (double)unit.Count;
-        Count += unit.Count;
-        Quality = (multiplier * Quality + unit.Quality) / 1 + multiplier;
-    }
-
-    public ArmyUnit FindPreferableTarget(List<ArmyUnit> list)
-    {
-        ArmyUnit bestTarget = list.FirstOrDefault();
-        foreach (ArmyUnit unit in list)
-        {
-            if (GetPureDamage(unit) > GetPureDamage(bestTarget)) bestTarget = unit;
-        }
-        return bestTarget;
-    }
-
-    public override string ToString()
-    {
-        return $"{Name} |=| Count: {Count}, Quality: {Quality}";
-    }
-
-    public void TakeDamage(int damage, out bool destroyed)
-    {
-        destroyed = false;
-        Count -= damage;
-        if (Count <= 0)
-        {
-            destroyed = true;
-        }
     }
 }
 
