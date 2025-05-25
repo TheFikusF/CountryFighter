@@ -1,13 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿namespace CountryFighter;
 
-namespace CountryFighter
+public interface IDamagable
 {
-    public interface IDamagable
-    {
-        void TakeDamage(int damage, out bool destroyed);
-    }
+    void TakeDamage(int damage, out bool destroyed);
 }
